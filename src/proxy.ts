@@ -13,14 +13,14 @@ export function proxy(request: NextRequest) {
   );
 
   // Not logged in → block private routes
-  if (!token && !isPublicRoute) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // if (!token && !isPublicRoute) {
+  //   return NextResponse.redirect(new URL('/login', request.url));
+  // }
 
-  // Logged in → block login page
-  if (token && isPublicRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  // // Logged in → block login page
+  // if (token && isPublicRoute) {
+  //   return NextResponse.redirect(new URL('/dashboard', request.url));
+  // }
 
   return NextResponse.next();
 }

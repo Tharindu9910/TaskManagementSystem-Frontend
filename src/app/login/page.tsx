@@ -48,7 +48,7 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Task Management System [cite: 24]
+            Task Management System 
           </p>
         </div>
 
@@ -106,7 +106,7 @@ export default function LoginPage() {
               href="/register"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              Register here [cite: 26]
+              Register here
             </Link>
           </p>
         </div>
