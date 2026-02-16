@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  // const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,10 +26,11 @@ export default function LoginPage() {
       const data = { email, password };
       const response = await loginUser(data);
       console.log("response:", response);
-
-      login();
+      router.push("/dashboard");
+      // login();
       // router.push("/dashboard");
     } catch (err: any) {
+      console.log("Error login:",err)
       // Professional error handling: avoid leaking stack traces [cite: 56]
       const message =
         err.response?.data?.message || "Invalid email or password";
