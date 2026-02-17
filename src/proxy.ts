@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import api from "./lib/axios";
 
 const PUBLIC_ROUTES = ["/login", "/register"];
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get("access_token")?.value;
   console.log("token found from cookie:", token);
   const { pathname } = request.nextUrl;
 
-  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL("/login", request.url));
+  
+  if (PUBLIC_ROUTES.some(r => pathname.startsWith(r))) {
+    return NextResponse.next();
   }
+
+//   if (pathname === "/") {
+//     return NextResponse.redirect(new URL("/login", request.url));
+//   }
   // Not logged in → block private routes
   //   if (!token && !isPublicRoute) {
   //     return NextResponse.redirect(new URL('/login', request.url));
@@ -24,7 +27,16 @@ export function proxy(request: NextRequest) {
   //     return NextResponse.redirect(new URL('/dashboard', request.url));
   //   }
 
-  return NextResponse.next();
+  try {
+    await api.get('/auth/me', {
+      headers: {
+        cookie: request.headers.get('cookie') || '',
+      },
+    });
+    return NextResponse.next();
+  } catch (err) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
 }
 
 export const config = {

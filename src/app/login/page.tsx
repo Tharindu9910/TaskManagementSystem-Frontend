@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { isAuthLoading, user } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,7 +25,6 @@ export default function LoginPage() {
     try {
       const data = { email, password };
       const response = await authService.login(data);
-      console.log("response:", response);
       router.push("/dashboard");
       // login();
       // router.push("/dashboard");
