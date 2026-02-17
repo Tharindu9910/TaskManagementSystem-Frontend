@@ -14,9 +14,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-//   if (pathname === "/") {
-//     return NextResponse.redirect(new URL("/login", request.url));
-//   }
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
   // Not logged in → block private routes
   //   if (!token && !isPublicRoute) {
   //     return NextResponse.redirect(new URL('/login', request.url));

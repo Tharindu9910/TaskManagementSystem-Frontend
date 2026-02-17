@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         "email": me.email
       }
       setUser(tempuser);
-      router.push("/");
+      // router.push("/dashboard");
     } catch (error: any) {
       const message =
       error || "Invalid email or password";

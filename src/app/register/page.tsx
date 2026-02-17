@@ -56,6 +56,7 @@ export default function Register() {
           Already have an account? <Link href="/login" className="text-blue-500">Login</Link>
         </p>
       </form>
+      <p className='text-xs'>Note:First request is going to be delayed!</p>
     </div>
   );
 }

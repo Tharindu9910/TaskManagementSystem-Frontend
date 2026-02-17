@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const { isAuthLoading, user, authError } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,6 +26,7 @@ export default function LoginPage() {
     try {
       const data = { email, password };
       const response = await authService.login(data);
+      console.log("response:", response);
       router.push("/dashboard");
       // login();
       // router.push("/dashboard");
@@ -52,9 +54,9 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
+          { authError && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-              {error}
+              {authError}
             </div>
           )}
 
