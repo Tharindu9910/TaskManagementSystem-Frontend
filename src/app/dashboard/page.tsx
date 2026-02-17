@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, CheckCircle2, Circle, Clock, Trash2, Edit3 } from "lucide-react";
-import api from "@/src/lib/axios";
+import { CheckCircle2, Circle, Clock, Trash2, Edit3 } from "lucide-react";
 import { Task } from "@/src/types";
 import { useAuth } from "@/src/context/AuthContext";
+import { taskService } from "@/src/services/tasks";
 
 export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -13,20 +13,21 @@ export default function DashboardPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { logout } = useAuth();
 
-  // Fetch tasks on component mount
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         setIsLoading(true);
-        // Hits your NestJS GET /tasks endpoint
-        const response = await api.get("/tasks");
-        console.log("response:", response);
-        setTasks(response.data);
+        const data = await taskService.getAll();
+        setTasks(data);
       } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to load tasks");
+        setError(err?.response?.data?.message || "Failed to load tasks");
       } finally {
         setIsLoading(false);
       }
@@ -36,54 +37,94 @@ export default function DashboardPage() {
   }, []);
 
   const handleCreateTask = async () => {
-    if (!newTitle.trim()) return;
+    const title = newTitle.trim();
+    const description = newDescription.trim();
+
+    if (!title || isCreating) return;
 
     try {
       setIsCreating(true);
-
-      const res = await api.post("/tasks", {
-        title: newTitle,
-        description: newDescription,
+      console.log(newTitle, newDescription);
+      const newTask = await taskService.create({
+        title,
+        description,
       });
 
-      // Optimistic UI update
-      setTasks((prev) => [res.data, ...prev]);
+      setTasks((prevTasks) => [newTask, ...prevTasks]);
 
-      // Reset form
       setNewTitle("");
       setNewDescription("");
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to create task");
+      alert("Failed to create task");
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleToggleComplete = async (taskId: string, completed: boolean) => {
-    // optimistic update
     const previousTasks = tasks;
+    const newCompleted = !completed;
 
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, completed: !completed } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, completed: newCompleted } : t))
     );
-
+    const data = {
+      completed: completed,
+    };
     try {
-      await api.put(`/tasks/${taskId}`, {
-        completed: !completed,
-      });
+      await taskService.update(taskId, { completed: newCompleted });
     } catch (err) {
       setTasks(previousTasks);
       alert("Failed to update task");
     }
   };
 
+  const handleUpdateTask = async (taskId: string) => {
+    const title = editTitle.trim();
+    const description = editDescription.trim();
+
+    if (!title || isUpdating) return;
+
+    const previousTasks = tasks;
+
+    // optimistic update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, title, description } : t))
+    );
+
+    try {
+      setIsUpdating(true);
+
+      await taskService.update(taskId, {
+        title,
+        description,
+      });
+
+      // exit edit mode
+      setEditingTaskId(null);
+    } catch (err) {
+      setTasks(previousTasks);
+      alert("Failed to update task");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const startEditTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditTitle(task.title);
+    setEditDescription(task.description || "");
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this task?")) return;
+
+    const previousTasks = tasks;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     try {
-      // Hits your NestJS DELETE /tasks/:id endpoint [cite: 49]
-      await api.delete(`/tasks/${id}`);
-      setTasks(tasks.filter((t) => t.id !== id));
+      await taskService.delete(id);
     } catch (err) {
+      setTasks(previousTasks);
       alert("Failed to delete task");
     }
   };
@@ -92,43 +133,56 @@ export default function DashboardPage() {
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
+          <h1 className="text-3xl font-bold text-gray-900">My Task</h1>
           <p className="text-gray-600">Manage your daily workflow</p>
         </div>
         <div className="flex gap-4">
-          {/* <button
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            onClick={() => {
-            }}
-          >
-            <Plus size={20} />
-            New Task
-          </button> */}
-          <div className="flex gap-2">
-            <input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Task title"
-              className="border text-black rounded px-3 py-2 text-sm"
-            />
-            <button
-              onClick={handleCreateTask}
-              disabled={isCreating}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-            >
-              Add
-            </button>
-          </div>
-
           <button
             onClick={logout}
-            className="text-gray-500 hover:text-red-600 text-sm font-medium"
+            className="text-gray-500 py-3 px-4 rounded-md hover:text-red-600 text-sm font-medium"
           >
             Logout
           </button>
         </div>
       </div>
+      <div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleCreateTask();
+          }}
+          className="w-full max-w-2xl mx-auto p-4"
+        >
+          <div className="flex flex-col gap-4">
+            {/* Title Input */}
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Task title"
+              className="w-full border border-gray-300 text-black rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+              required
+            />
 
+            {/* Description Textarea */}
+            <input
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Add a description..."
+              className="w-full border border-gray-300 text-black rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+            />
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isCreating || !newTitle.trim()}
+              className="w-full sm:w-max text-sm px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors self-end"
+            >
+              {isCreating ? "Adding..." : "Add Task"}
+            </button>
+          </div>
+        </form>
+      </div>
       {/* Loading State  */}
       {isLoading && (
         <div className="flex justify-center py-20">
@@ -160,7 +214,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-start mb-3">
                 <span
                   className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    task.completed === true
+                    task.completed === false
                       ? "bg-green-400 text-green-700"
                       : "bg-gray-400 text-gray-700"
                   }`}
@@ -179,7 +233,10 @@ export default function DashboardPage() {
                     )}
                   </button>
 
-                  <button className="text-gray-400 hover:text-blue-600">
+                  <button
+                    onClick={() => startEditTask(task)}
+                    className="text-gray-400 hover:text-blue-600"
+                  >
                     <Edit3 size={18} />
                   </button>
                   <button
@@ -190,10 +247,47 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">{task.title}</h3>
-              <p className="text-gray-600 text-sm line-clamp-2 mb-4">
-                {task.description}
-              </p>
+              {editingTaskId === task.id ? (
+                <div className="flex flex-col gap-2 mb-3 ">
+                  <input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="border border-gray-300 text-gray-400 rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none "
+                  />
+
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    rows={2}
+                    className="border border-gray-300 text-gray-400 rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none "
+                  />
+
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => handleUpdateTask(task.id)}
+                      disabled={isUpdating}
+                      className="text-xs bg-blue-600 text-white px-3 py-1 rounded"
+                    >
+                      {isUpdating ? "Saving..." : "Save"}
+                    </button>
+
+                    <button
+                      onClick={() => setEditingTaskId(null)}
+                      className="text-xs text-white bg-gray-400 px-3 py-1 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="font-bold text-gray-900 mb-2">{task.title}</h3>
+                  <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+                    {task.description}
+                  </p>
+                </>
+              )}
+
               <div className="flex items-center text-xs text-gray-400 gap-1">
                 <Clock size={14} />
                 {new Date(task.createdAt).toLocaleDateString()}

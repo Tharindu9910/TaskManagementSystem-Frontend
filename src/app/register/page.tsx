@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { registerUser } from '@/src/services/auth';
+import { authService } from '@/src/services/auth';
+
 
 export default function Register() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -17,7 +18,7 @@ export default function Register() {
     setError('');
     
     try {
-      await registerUser(formData)
+      await authService.register(formData)
       router.push('/login'); // Redirect after successful registration
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');

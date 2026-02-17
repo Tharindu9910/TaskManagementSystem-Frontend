@@ -1,32 +1,62 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { logoutUser } from "../services/auth";
+import { AuthContextType, User } from "../types";
+import { authService } from "../services/auth";
 
-interface AuthContextType {
-  user: any;
-  login: () => void;
-  logout: () => void;
-  isLoading: boolean;
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User|null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authError,setAuthError] = useState<string>("");
   const router = useRouter();
 
-  const login = async() => {
-    //refresh the user
-    console.log("came herelogin")
-    router.push("/dashboard");
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const me = await authService.getMe();
+        const tempuser = {
+          "id": me.sub,
+          "email": me.email
+        }
+        setUser(tempuser);
+      } catch {
+        setUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      setIsAuthLoading(true);
+      await authService.login({ email, password });
+      const me = await authService.getMe();
+      const tempuser = {
+        "id": me.sub,
+        "email": me.email
+      }
+      setUser(tempuser);
+      router.push("/");
+    } catch (error: any) {
+      const message =
+      error || "Invalid email or password";
+      setAuthError(message)
+
+    } finally {
+      setIsAuthLoading(false);
+    }
   };
 
   const logout = async () => {
     try {
-      await logoutUser()
+      await authService.logout()
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
@@ -36,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthLoading, authError }}>
       {children}
     </AuthContext.Provider>
   );

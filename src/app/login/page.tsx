@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Lock, Mail } from "lucide-react"; // For better UX icons
 import { useAuth } from "@/src/context/AuthContext";
 import api from "@/src/lib/axios";
-import { loginUser } from "@/src/services/auth";
+import { authService } from "@/src/services/auth";
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // const { login } = useAuth();
+  const { isAuthLoading, user } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +25,7 @@ export default function LoginPage() {
 
     try {
       const data = { email, password };
-      const response = await loginUser(data);
+      const response = await authService.login(data);
       console.log("response:", response);
       router.push("/dashboard");
       // login();

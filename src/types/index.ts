@@ -1,13 +1,4 @@
-/**
- * Task Management System - Type Definitions
- * Evaluates: TypeScript usage and separation of concerns [cite: 35, 61]
- */
 
-export enum TaskStatus {
-    OPEN = 'OPEN',
-    IN_PROGRESS = 'IN_PROGRESS',
-    DONE = 'DONE',
-  }
   
   export interface Task {
     id: string; // Typically a UUID or MongoDB ObjectId string
@@ -18,22 +9,37 @@ export enum TaskStatus {
     createdAt: string; // ISO Date string
     updatedAt: string; // ISO Date string
   }
-  
-  /**
-   * Data Transfer Object (DTO) for creating a task
-   * Ensures specific fields for POST /tasks [cite: 47]
-   */
-  export interface CreateTaskDto {
+
+  export interface CreateTaskInput {
     title: string;
-    description?: string;
+    description: string;
   }
-  
-  /**
-   * DTO for updating a task
-   * Ensures specific fields for PUT /tasks/:id [cite: 48]
-   */
-  export interface UpdateTaskDto {
+  export interface UpdateTaskInput {
     title?: string;
     description?: string;
-    status?: TaskStatus;
+    completed?: boolean;
   }
+
+  export interface AuthResponse {
+    user: {
+      id: string;
+      email: string;
+    };
+  }
+  export interface User {
+      id: string;
+      email: string;
+  }
+  export interface GetMeResponse {
+     sub: string;
+     email: string
+  } 
+
+  export interface AuthContextType {
+    user: User|null;
+    login: (email: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
+    isAuthLoading: boolean;
+    authError: string
+  }
+  

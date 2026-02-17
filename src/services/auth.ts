@@ -1,17 +1,26 @@
 import api from "@/src/lib/axios";
+import { AuthResponse, GetMeResponse } from "../types";
 
-export const registerUser = async (data: { email: string; password: string }) => {
-  return await api.post("/auth/register", data);
-};
+export const authService = {
+  register: async (data: { email: string; password: string }): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>("/auth/register", data);
+    return res.data;
+  },
 
-export const loginUser = async (data: { email: string; password: string }) => {
-  return await api.post("/auth/login", data);
-};
+  login: async (data: { email: string; password: string }): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>("/auth/login", data);
+    return res.data;
+  },
 
-export const logoutUser = async () => {
-  await api.post("/auth/logout", {});
-};
+  logout: async (): Promise<void> => {
+    await api.post("/auth/logout");
+  },
 
+  getMe: async (): Promise<GetMeResponse> => {
+    const res = await api.get("/auth/me");
+    return res.data;
+  },
+}
 // export const fetchCurrentUser = async () => {
 //   const res = await api.get('/auth/me');
 //   return res.data;
