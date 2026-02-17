@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import api from "./lib/axios";
+import axios from "axios";
 
 const PUBLIC_ROUTES = ["/login", "/register"];
 
@@ -9,8 +10,7 @@ export async function proxy(request: NextRequest) {
   console.log("token found from cookie:", token);
   const { pathname } = request.nextUrl;
 
-  
-  if (PUBLIC_ROUTES.some(r => pathname.startsWith(r))) {
+  if (PUBLIC_ROUTES.some((r) => pathname.startsWith(r))) {
     return NextResponse.next();
   }
 
@@ -27,16 +27,15 @@ export async function proxy(request: NextRequest) {
   //     return NextResponse.redirect(new URL('/dashboard', request.url));
   //   }
 
-  try {
-    await api.get('/auth/me', {
-      headers: {
-        cookie: request.headers.get('cookie') || '',
-      },
-    });
-    return NextResponse.next();
-  } catch (err) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // try {
+  //   await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+  //     headers: { cookie: request.headers.get("cookie") || '' },
+  //     withCredentials: true, 
+  //   });
+  //   return NextResponse.next();
+  // } catch (err) {
+  //   return NextResponse.redirect(new URL("/login", request.url));
+  // }
 }
 
 export const config = {
